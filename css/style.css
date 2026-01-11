@@ -110,11 +110,69 @@ font-family: ui-rounded;
   height: 3px;
   background-image: linear-gradient(to left, #778000,#d31b1b, #778000); }
 
+.favorite-filter-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85em;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  min-width: 48px;
+  min-height: 48px;
+}
+
+.favorite-filter-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+}
+
+.favorite-filter-btn:active {
+  transform: translateY(0);
+}
+
+.favorite-filter-btn .material-icons {
+  font-size: 1.2em;
+}
+
+.favorite-filter-btn.active {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.audio-favorite-toggle .material-icons {
+  transition: all 0.3s ease;
+}
+
+.audio-favorite-toggle.favorited .material-icons {
+  color: #FFD700;
+}
+
+@media only screen and (max-width: 37rem) {
+  .favorite-filter-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.75em;
+  }
+
+  .favorite-filter-btn .favorite-text {
+    display: none;
+  }
+
+  .favorite-filter-btn .material-icons {
+    font-size: 1.4em;
+  }
+}
+
 .heading-3 {
   padding: .4rem 0;
   font-size: 1.6em;
   letter-spacing: 2px;
- 
+
   color: #fff; }
 
 .music-artist-name {

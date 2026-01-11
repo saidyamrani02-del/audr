@@ -204,7 +204,13 @@ html, body {
                  <!-- Top Cover End-->
 
                  <div class="music-con">
-                      <h1 class="heading-sec">Latest Qaseeda</h1>
+                      <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 2rem;">
+                          <h1 class="heading-sec">Latest Qaseeda</h1>
+                          <button class="favorite-filter-btn" id="favorite-filter-btn" title="Show Favorites">
+                              <span class="material-icons">star</span>
+                              <span class="favorite-text">Favourite</span>
+                          </button>
+                      </div>
 
                     <!-- Music List Scroll Start-->
                     <div class="music-con__list scroll-bar-hide">
@@ -318,8 +324,8 @@ html, body {
             <div class="audio-player__btn-top audio-shuffle">
                 <span class="material-icons">shuffle</span>
             </div>
-            <div class="audio-player__btn-top audio-volume">
-                <span class="material-icons">volume_up</span>
+            <div class="audio-player__btn-top audio-favorite-toggle" id="audio-favorite-toggle">
+                <span class="material-icons">star_border</span>
             </div>
             <div class="audio-player__btn-top audio-repeat">
                 <span class="material-icons">repeat</span>
@@ -365,6 +371,14 @@ html, body {
 	<script src="fonts/hammer.min.js"></script>
 
  <script src="fonts/jquery.min.js"></script>
+
+<script>
+window.addEventListener('load', function() {
+    if (typeof getSongs !== 'undefined') {
+        window.getSongs = getSongs;
+    }
+});
+</script>
 
 <!-- changes added script for menu-->
   <script>
@@ -846,6 +860,228 @@ document.addEventListener('click', function(event) {
 });
 </script>
 
+<script>
+// Favorite functionality
+class FavoriteSongs {
+    static storageKey = 'favoriteSongs';
+
+    static getFavorites() {
+        const favorites = localStorage.getItem(this.storageKey);
+        return favorites ? JSON.parse(favorites) : [];
+    }
+
+    static saveFavorites(favorites) {
+        localStorage.setItem(this.storageKey, JSON.stringify(favorites));
+    }
+
+    static isFavorite(songUrl) {
+        const favorites = this.getFavorites();
+        return favorites.includes(songUrl);
+    }
+
+    static toggleFavorite(songUrl) {
+        const favorites = this.getFavorites();
+        const index = favorites.indexOf(songUrl);
+
+        if (index === -1) {
+            favorites.push(songUrl);
+        } else {
+            favorites.splice(index, 1);
+        }
+
+        this.saveFavorites(favorites);
+        return index === -1;
+    }
+}
+
+function showToast(message) {
+    let toast = document.getElementById('favorite-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'favorite-toast';
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(50, 50, 50, 0.95);
+            color: white;
+            padding: 14px 24px;
+            border-radius: 8px;
+            z-index: 10000;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        `;
+        document.body.appendChild(toast);
+    }
+
+    toast.textContent = message;
+    toast.style.opacity = '1';
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+    }, 2500);
+}
+
+let isFilteringFavorites = false;
+let originalMusicItems = [];
+let originalHorItems = [];
+
+function showLoader() {
+    const loadingSec = document.querySelector('.loading-sec');
+    if (loadingSec) {
+        loadingSec.style.opacity = '1';
+        loadingSec.style.visibility = 'visible';
+        loadingSec.style.zIndex = '10000';
+    }
+}
+
+function hideLoader() {
+    const loadingSec = document.querySelector('.loading-sec');
+    if (loadingSec) {
+        setTimeout(() => {
+            loadingSec.style.opacity = '0';
+            setTimeout(() => {
+                loadingSec.style.visibility = 'hidden';
+                loadingSec.style.zIndex = '100';
+            }, 500);
+        }, 800);
+    }
+}
+
+function filterFavorites() {
+    const filterBtn = document.getElementById('favorite-filter-btn');
+    const favorites = FavoriteSongs.getFavorites();
+
+    if (!isFilteringFavorites) {
+        showLoader();
+
+        setTimeout(() => {
+            if (favorites.length === 0) {
+                hideLoader();
+                showToast('No favorite songs');
+                return;
+            }
+
+            const musicConItems = document.querySelectorAll('.music-con__item');
+            const musicHorItems = document.querySelectorAll('.music-hor__item');
+
+            let foundFavorites = false;
+
+            musicConItems.forEach(item => {
+                const index = parseInt(item.getAttribute('data-original-index'));
+                const songUrl = window.getSongs?.songs?.[index]?.songUrl;
+
+                if (songUrl && favorites.includes(songUrl)) {
+                    item.style.display = '';
+                    foundFavorites = true;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            musicHorItems.forEach(item => {
+                const index = parseInt(item.getAttribute('data-original-index'));
+                const songUrl = window.getSongs?.animeSong?.[index]?.songUrl;
+
+                if (songUrl && favorites.includes(songUrl)) {
+                    item.style.display = '';
+                    foundFavorites = true;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            if (!foundFavorites) {
+                showToast('No favorite songs');
+                musicConItems.forEach(item => item.style.display = '');
+                musicHorItems.forEach(item => item.style.display = '');
+            } else {
+                isFilteringFavorites = true;
+                filterBtn.classList.add('active');
+            }
+
+            hideLoader();
+        }, 1000);
+    } else {
+        const musicConItems = document.querySelectorAll('.music-con__item');
+        const musicHorItems = document.querySelectorAll('.music-hor__item');
+
+        musicConItems.forEach(item => item.style.display = '');
+        musicHorItems.forEach(item => item.style.display = '');
+
+        isFilteringFavorites = false;
+        filterBtn.classList.remove('active');
+    }
+}
+
+function updateFavoriteIcon() {
+    const audioElement = document.getElementById('audio');
+    const favoriteToggle = document.getElementById('audio-favorite-toggle');
+
+    if (!audioElement || !favoriteToggle) return;
+
+    const currentSrc = audioElement.getAttribute('src');
+    if (!currentSrc) return;
+
+    const songUrl = currentSrc.split('/').pop();
+    const isFavorited = FavoriteSongs.isFavorite(songUrl);
+
+    const icon = favoriteToggle.querySelector('.material-icons');
+    if (isFavorited) {
+        icon.textContent = 'star';
+        favoriteToggle.classList.add('favorited');
+    } else {
+        icon.textContent = 'star_border';
+        favoriteToggle.classList.remove('favorited');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const filterBtn = document.getElementById('favorite-filter-btn');
+    const favoriteToggle = document.getElementById('audio-favorite-toggle');
+    const audioElement = document.getElementById('audio');
+
+    if (filterBtn) {
+        filterBtn.addEventListener('click', filterFavorites);
+    }
+
+    if (favoriteToggle) {
+        favoriteToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+
+            const currentSrc = audioElement.getAttribute('src');
+            if (!currentSrc) {
+                showToast('No song is playing');
+                return;
+            }
+
+            const songUrl = currentSrc.split('/').pop();
+            const isFavorited = FavoriteSongs.toggleFavorite(songUrl);
+
+            updateFavoriteIcon();
+
+            showToast(isFavorited ? 'Added to favorites' : 'Removed from favorites');
+
+            if (isFilteringFavorites) {
+                setTimeout(() => {
+                    filterFavorites();
+                    filterFavorites();
+                }, 300);
+            }
+        });
+    }
+
+    if (audioElement) {
+        audioElement.addEventListener('loadedmetadata', updateFavoriteIcon);
+        audioElement.addEventListener('play', updateFavoriteIcon);
+    }
+
+    setTimeout(updateFavoriteIcon, 1000);
+});
+</script>
 
 </body>
 </html>
